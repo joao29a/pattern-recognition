@@ -15,7 +15,7 @@ class FileIO {
     std::ifstream ifs;
   public:
     FileIO(){}
-    virtual bool readFile(const char*, DataMap<T>&) { return true; }
+    virtual void readFile(const char*, DataMap<T>&) {}
 };
 
 #endif

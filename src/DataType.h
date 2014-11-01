@@ -14,6 +14,7 @@ class DataType {
     DataType() { attributesName = nullptr; };
     T getAtt(std::string&);
     void setAtt(std::string&, T&);
+    size_t getAttSize();
     std::vector<std::string>& getAttributesName() { return *attributesName; };
 };
 
@@ -25,6 +26,11 @@ void DataType<T>::setAtt(std::string &attName, T &data) {
 template <typename T>
 T DataType<T>::getAtt(std::string &attName) {
   return att[attName];
+}
+
+template <typename T>
+size_t DataType<T>::getAttSize() {
+  return attributesName->size();
 }
 
 #endif

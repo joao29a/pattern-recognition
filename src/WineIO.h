@@ -10,11 +10,11 @@ template<typename T>
 class WineIO: public FileIO<T> {
   public:
     WineIO(){}
-    bool readFile(const char*, DataMap<T>&) override;
+    void readFile(const char*, DataMap<T>&) override;
 };
 
 template <typename T>
-bool WineIO<T>::readFile(const char* filename, DataMap<T>& data) {
+void WineIO<T>::readFile(const char* filename, DataMap<T>& data) {
   this->ifs.open(filename, std::ifstream::in);
   std::string line;
   while (std::getline(this->ifs, line)) {

@@ -1,2 +1,2 @@
 all:
-	g++ *.cpp -o wine.out -std=c++11 -DPRINTDATA
+	g++ -g *.cpp -o wine.out -I. -std=c++11 -DLEARNINGINFO
