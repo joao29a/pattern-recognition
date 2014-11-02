@@ -4,11 +4,12 @@
 #include "FileIO.h"
 #include <iostream>
 #include <dlib/svm.h>
-//#include <dlib/statistics.h>
 
-#define TOLERANCE  0.00001
-#define KERNEL_VAL 0.1
-#define MAX_DICT   10000
+#define TOLERANCE  0.000000001
+#define KERNEL_VAL 0.001
+#define MAX_DICT   20000
+
+std::ostream& operator<<(std::ostream&, const std::vector<unsigned>&);
 
 template<typename T>
 class MachineLearning {
@@ -47,16 +48,53 @@ void MachineLearning<T>::constructDataCollection() {
 template <typename T>
 void MachineLearning<T>::testInputData() {
   for (auto& learning: learningData) {
-    std::cout << "Collection: " << learning.first << std::endl;
+    DataType<T>* best, *worst;
+    T distanceBest, distanceWorst;
+    std::vector<unsigned> okSamples, badSamples, bestSamples;
+    unsigned id = learning.first;
+    if (id != collectionMap.size() + 1) {
+      std::cout << "Collection: " << id << std::endl;
+      DataType<T>* best = getBestFromCollection(id, collectionMap[id], 
+          &distanceBest);
+      DataType<T>* worst = getWorstFromCollection(id, collectionMap[id], 
+          &distanceWorst);
+    } else {
+      std::cout << "Collection: All" << std::endl;
+      DataType<T>* best = getBestFromCollection(id, getAllSamples(), 
+          &distanceBest);
+      DataType<T>* worst = getWorstFromCollection(id, getAllSamples(), 
+          &distanceWorst);
+    }
     dlib::kcentroid<Kernel> centroid = learning.second;
     for (auto& input: inputMap) {
       std::vector<DataType<T>*> samples = input.second;
       for (DataType<T>* sample: samples) {
         MatrixSample m = makeSample(sample);
+        T distance = centroid(m);
         std::cout << "\tSample: " << sample->getId() << std::endl;
-        std::cout << "\tDistance: " << centroid(m) << "\n\n";
+        std::cout << "\tAttributes:\n" << *sample;
+        std::cout << "\tDistance: " << centroid(m) << std::endl;
+        if (distance > distanceBest && distance < distanceWorst){
+          std::cout << "\tResult: OK" << "\n\n";
+          okSamples.push_back(sample->getId());
+        }
+        else if (distance < distanceBest){
+          std::cout << "\tResult: Best" << "\n\n";
+          bestSamples.push_back(sample->getId());
+        }
+        else if (distance > distanceWorst){
+          std::cout << "\tResult: Bad" << "\n\n";
+          badSamples.push_back(sample->getId());
+        }
       }
     }
+    std::cout << "\tStatistic: " << std::endl;
+    std::cout << "\t\tOK Samples: " << okSamples << "(" << okSamples.size() 
+      << ")" << std::endl;
+    std::cout << "\t\tBest Samples: " << bestSamples << "(" << bestSamples.size() 
+      << ")" << std::endl;
+    std::cout << "\t\tBad Samples: " << badSamples << "(" << badSamples.size() 
+      << ")" << "\n\n";
   }
 }
 
@@ -204,6 +242,13 @@ void MachineLearning<T>::printBestAndWorst() {
     std::cout << "\tCollection: " << worstSample->getCollection() << std::endl;
     std::cout << "\tDistance: " << distance << "\n\n";
   }
+}
+
+std::ostream& operator<<(std::ostream& os, const std::vector<unsigned>& vet) {
+  for (unsigned val: vet) {
+    os << val << " ";
+  }
+  return os;
 }
 
 #endif

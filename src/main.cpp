@@ -10,7 +10,9 @@ int main() {
 #ifdef PRINTDATA
   ml.printData();
 #endif
+#ifdef BESTWORST
   ml.printBestAndWorst();
+#endif
   ml.testInputData();
   return 0;
 }
