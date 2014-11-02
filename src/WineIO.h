@@ -17,6 +17,7 @@ template <typename T>
 void WineIO<T>::readFile(const char* filename, DataMap<T>& data) {
   this->ifs.open(filename, std::ifstream::in);
   std::string line;
+  unsigned id = 1, collection = 0;
   while (std::getline(this->ifs, line)) {
     std::istringstream ss(line);
     std::string word;
@@ -24,8 +25,14 @@ void WineIO<T>::readFile(const char* filename, DataMap<T>& data) {
     std::istringstream ss_val(word);
     unsigned val;
     ss_val >> val;
+    if (val != collection) {
+      collection = val;
+      id = 1;
+    }
     Wine<T>* wine = new Wine<T>();
-    data[val].push_back(wine);
+    wine->setId(id);
+    wine->setCollection(collection);
+    data[collection].push_back(wine);
     for (std::string &att: wine->getAttributesName()) {
       assert(ss.good() && "No more words!");
       std::getline(ss, word, ',');
@@ -34,6 +41,7 @@ void WineIO<T>::readFile(const char* filename, DataMap<T>& data) {
       ss_att >> valAtt;
       wine->setAtt(att, valAtt);
     }
+    id++;
   }
   this->ifs.close();
 }

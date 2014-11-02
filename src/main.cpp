@@ -10,5 +10,6 @@ int main() {
 #ifdef PRINTDATA
   ml.printData();
 #endif
+  ml.printBest();
   return 0;
 }

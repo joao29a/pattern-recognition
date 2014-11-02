@@ -9,18 +9,43 @@ class DataType {
   protected:
     std::unordered_map<std::string, T> att;
     std::vector<std::string>* attributesName;
+    unsigned id, collection;
 
   public:
     DataType() { attributesName = nullptr; };
     T getAtt(std::string&);
     void setAtt(std::string&, T&);
     size_t getAttSize();
+    void setId(unsigned);
+    unsigned getId();
+    void setCollection(unsigned);
+    unsigned getCollection();
     std::vector<std::string>& getAttributesName() { return *attributesName; };
 };
 
 template <typename T>
 void DataType<T>::setAtt(std::string &attName, T &data) {
   att[attName] = data;
+}
+
+template <typename T>
+void DataType<T>::setId(unsigned id) {
+  this->id = id;
+}
+
+template <typename T>
+unsigned DataType<T>::getId() {
+  return id;
+}
+
+template <typename T>
+void DataType<T>::setCollection(unsigned collection) {
+  this->collection = collection;
+}
+
+template <typename T>
+unsigned DataType<T>::getCollection() {
+  return collection;
 }
 
 template <typename T>

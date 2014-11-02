@@ -22,6 +22,10 @@ class MachineLearning {
     const char* filename;
     void trainData(std::vector<DataType<T>*>&, MatrixSample&, 
                               dlib::kcentroid<Kernel>&);
+    MatrixSample makeSample(DataType<T>*);
+    DataType<T>* getBestFromCollection(unsigned id, std::vector<DataType<T>*>, T*);
+    std::vector<DataType<T>*> getAllSamples();
+    void buildSamplesAndTrain(std::vector<DataType<T>*>, unsigned);
 
   public:
     MachineLearning() {}
@@ -30,6 +34,7 @@ class MachineLearning {
     size_t getAttSize();
     void printData();
     void printLearningInfo();
+    void printBest();
 };
 
 template <typename T>
@@ -39,32 +44,30 @@ void MachineLearning<T>::constructDataCollection() {
 
 template <typename T>
 void MachineLearning<T>::buildLearningData() {
-  MatrixSample mAll;
-  mAll.set_size(getAttSize());
-  dlib::kcentroid<Kernel> centroidAll(Kernel(KERNEL_VAL), TOLERANCE, MAX_DICT);
-  bool hasCollections = false;
-  if (collectionMap.size() > 1) hasCollections = true;
   for (auto& collection: collectionMap) {
-    MatrixSample m;
-    m.set_size(getAttSize());
-    dlib::kcentroid<Kernel> centroid(Kernel(KERNEL_VAL), TOLERANCE, MAX_DICT);
-    trainData(collection.second, m, centroid);
-    LearningPair mlPair = {m, centroid};
-    learningData[collection.first] = mlPair;
-    if (hasCollections) trainData(collection.second, mAll, centroidAll);
+    buildSamplesAndTrain(collection.second, collection.first);
   }
-  if (hasCollections) {    
-    LearningPair mlPair = {mAll, centroidAll};
-    learningData[collectionMap.size() + 1] = mlPair;
+  if (collectionMap.size() > 1) {
+    unsigned id = collectionMap.size() + 1;
+    buildSamplesAndTrain(getAllSamples(), id);
   }
+}
+
+template <typename T>
+void MachineLearning<T>::buildSamplesAndTrain(std::vector<DataType<T>*> samples,
+    unsigned id) {
+  MatrixSample m;
+  dlib::kcentroid<Kernel> centroid(Kernel(KERNEL_VAL), TOLERANCE, MAX_DICT);
+  trainData(samples, m, centroid);
+  LearningPair mlPair = {m, centroid};
+  learningData[id] = mlPair;
 }
 
 template <typename T>
 void MachineLearning<T>::trainData(std::vector<DataType<T>*>& datas, 
     MatrixSample& m, dlib::kcentroid<Kernel>& centroid) {
   for (DataType<T>* data: datas) {
-    for (size_t i = 0; i < getAttSize(); i++)
-      m(i) = data->getAtt(data->getAttributesName()[i]);
+    m = makeSample(data);
     centroid.train(m);
   }
 }
@@ -97,6 +100,65 @@ void MachineLearning<T>::printLearningInfo() {
       << centroid.inner_product(data.second.first) << std::endl;
     std::cout << "\tSquared norm: " 
       << centroid.squared_norm() << "\n\n";
+  }
+}
+
+template <typename T>
+typename MachineLearning<T>::MatrixSample MachineLearning<T>::makeSample(
+    DataType<T>* sample) {
+  MatrixSample m;
+  m.set_size(getAttSize());
+  for (size_t i = 0; i < getAttSize(); i++) {
+    m(i) = sample->getAtt(sample->getAttributesName()[i]);
+  }
+  return m;
+}
+
+template <typename T>
+std::vector<DataType<T>*> MachineLearning<T>::getAllSamples() {
+  std::vector<DataType<T>*> samples;
+  for (auto& collection: collectionMap) {
+    for (DataType<T>* sample: collection.second)
+      samples.push_back(sample);
+  }
+  return samples;
+}
+
+template <typename T>
+DataType<T>* MachineLearning<T>::getBestFromCollection(unsigned id,
+    std::vector<DataType<T>*> samples, T* distance) {
+  T min = std::numeric_limits<T>::max();
+  dlib::kcentroid<Kernel>& centroid = learningData[id].second;
+  DataType<T>* best = nullptr;
+  for (auto& sample: samples) {
+    MatrixSample m = makeSample(sample);
+    if (centroid(m) < min) {
+      min = centroid(m);
+      best = sample;
+    }
+  }
+  if (distance != nullptr) *distance = min;
+  return best;
+}
+
+template <typename T>
+void MachineLearning<T>::printBest() {
+  T distance;
+  DataType<T>* bestSample = nullptr;
+  for (auto& collection: collectionMap) {
+    bestSample = getBestFromCollection(collection.first, 
+        collection.second, &distance);
+    std::cout << "Collection: " << collection.first << std::endl;
+    std::cout << "\tBest sample id: " << bestSample->getId() << std::endl;
+    std::cout << "\tDistance: " << distance << "\n\n";
+  }
+  if (collectionMap.size() > 1) {
+    bestSample = getBestFromCollection(collectionMap.size() + 1, 
+        getAllSamples(), &distance);
+    std::cout << "All Collections " << std::endl;
+    std::cout << "\tBest sample id: " << bestSample->getId() << std::endl;
+    std::cout << "\tCollection: " << bestSample->getCollection() << std::endl;
+    std::cout << "\tDistance: " << distance << "\n\n";
   }
 }
 
