@@ -1,2 +1,2 @@
 all:
-	clang++ -g *.cpp -o wine.out -I. -std=c++11 -DLEARNINGINFO
+	g++ -g *.cpp -o wine.out -I. -std=c++11
