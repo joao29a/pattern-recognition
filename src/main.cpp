@@ -11,5 +11,6 @@ int main() {
   ml.printData();
 #endif
   ml.printBestAndWorst();
+  ml.testInputData();
   return 0;
 }

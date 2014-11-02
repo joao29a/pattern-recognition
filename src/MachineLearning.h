@@ -15,24 +15,24 @@ class MachineLearning {
   protected:
     typedef dlib::matrix<T, 0, 1> MatrixSample;
     typedef dlib::radial_basis_kernel<MatrixSample> Kernel;
-    typedef std::pair<MatrixSample, dlib::kcentroid<Kernel>> LearningPair;
     DataMap<T> collectionMap;
+    DataMap<T> inputMap;
     FileIO<T>* dataIO;
-    std::unordered_map<unsigned, LearningPair> learningData;
-    const char* filename;
-    void trainData(std::vector<DataType<T>*>&, MatrixSample&, 
-                              dlib::kcentroid<Kernel>&);
+    std::unordered_map<unsigned, dlib::kcentroid<Kernel>> learningData;
+    const char* filename, *input;
+    void trainData(std::vector<DataType<T>*>&, dlib::kcentroid<Kernel>&);
     size_t getAttSize();
-    MatrixSample makeSample(DataType<T>*);
     DataType<T>* getBestFromCollection(unsigned id, std::vector<DataType<T>*>, T*);
     DataType<T>* getWorstFromCollection(unsigned id, std::vector<DataType<T>*>, T*);
     std::vector<DataType<T>*> getAllSamples();
     void buildSamplesAndTrain(std::vector<DataType<T>*>, unsigned);
+    MatrixSample makeSample(DataType<T>*);
 
   public:
     MachineLearning() {}
     void constructDataCollection();
     void buildLearningData();
+    void testInputData();
     void printData();
     void printLearningInfo();
     void printBestAndWorst();
@@ -41,6 +41,23 @@ class MachineLearning {
 template <typename T>
 void MachineLearning<T>::constructDataCollection() {
   dataIO->readFile(filename, collectionMap);
+  dataIO->readInput(input, inputMap);
+}
+
+template <typename T>
+void MachineLearning<T>::testInputData() {
+  for (auto& learning: learningData) {
+    std::cout << "Collection: " << learning.first << std::endl;
+    dlib::kcentroid<Kernel> centroid = learning.second;
+    for (auto& input: inputMap) {
+      std::vector<DataType<T>*> samples = input.second;
+      for (DataType<T>* sample: samples) {
+        MatrixSample m = makeSample(sample);
+        std::cout << "\tSample: " << sample->getId() << std::endl;
+        std::cout << "\tDistance: " << centroid(m) << "\n\n";
+      }
+    }
+  }
 }
 
 template <typename T>
@@ -57,18 +74,16 @@ void MachineLearning<T>::buildLearningData() {
 template <typename T>
 void MachineLearning<T>::buildSamplesAndTrain(std::vector<DataType<T>*> samples,
     unsigned id) {
-  MatrixSample m;
   dlib::kcentroid<Kernel> centroid(Kernel(KERNEL_VAL), TOLERANCE, MAX_DICT);
-  trainData(samples, m, centroid);
-  LearningPair mlPair = {m, centroid};
-  learningData[id] = mlPair;
+  trainData(samples, centroid);
+  learningData[id] = centroid;
 }
 
 template <typename T>
 void MachineLearning<T>::trainData(std::vector<DataType<T>*>& datas, 
-    MatrixSample& m, dlib::kcentroid<Kernel>& centroid) {
+    dlib::kcentroid<Kernel>& centroid) {
   for (DataType<T>* data: datas) {
-    m = makeSample(data);
+    MatrixSample m = makeSample(data);
     centroid.train(m);
   }
 }
@@ -105,6 +120,16 @@ void MachineLearning<T>::printLearningInfo() {
 }
 
 template <typename T>
+std::vector<DataType<T>*> MachineLearning<T>::getAllSamples() {
+  std::vector<DataType<T>*> samples;
+  for (auto& collection: collectionMap) {
+    for (DataType<T>* sample: collection.second)
+      samples.push_back(sample);
+  }
+  return samples;
+}
+
+template <typename T>
 typename MachineLearning<T>::MatrixSample MachineLearning<T>::makeSample(
     DataType<T>* sample) {
   MatrixSample m;
@@ -116,20 +141,10 @@ typename MachineLearning<T>::MatrixSample MachineLearning<T>::makeSample(
 }
 
 template <typename T>
-std::vector<DataType<T>*> MachineLearning<T>::getAllSamples() {
-  std::vector<DataType<T>*> samples;
-  for (auto& collection: collectionMap) {
-    for (DataType<T>* sample: collection.second)
-      samples.push_back(sample);
-  }
-  return samples;
-}
-
-template <typename T>
 DataType<T>* MachineLearning<T>::getBestFromCollection(unsigned id,
     std::vector<DataType<T>*> samples, T* distance) {
   T min = std::numeric_limits<T>::max();
-  dlib::kcentroid<Kernel>& centroid = learningData[id].second;
+  dlib::kcentroid<Kernel>& centroid = learningData[id];
   DataType<T>* best = nullptr;
   for (auto& sample: samples) {
     MatrixSample m = makeSample(sample);
@@ -146,7 +161,7 @@ template <typename T>
 DataType<T>* MachineLearning<T>::getWorstFromCollection(unsigned id,
     std::vector<DataType<T>*> samples, T* distance) {
   T max = std::numeric_limits<T>::min();
-  dlib::kcentroid<Kernel>& centroid = learningData[id].second;
+  dlib::kcentroid<Kernel>& centroid = learningData[id];
   DataType<T>* worst = nullptr;
   for (auto& sample: samples) {
     MatrixSample m = makeSample(sample);

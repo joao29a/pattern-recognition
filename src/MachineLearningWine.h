@@ -13,6 +13,7 @@ class MachineLearningWine: public MachineLearning<TYPE> {
 
 MachineLearningWine::MachineLearningWine() : MachineLearning() {
   this->filename = "dataset-wine/wine.data";
+  this->input    = "dataset-wine/test.data";
   this->dataIO   = new WineIO<TYPE>();
 }
 

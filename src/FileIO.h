@@ -16,6 +16,7 @@ class FileIO {
   public:
     FileIO(){}
     virtual void readFile(const char*, DataMap<T>&) {}
+    virtual void readInput(const char*, DataMap<T>&) {}
 };
 
 #endif
