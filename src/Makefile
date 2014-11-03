@@ -1,2 +1,2 @@
 all:
-	g++ -g *.cpp -o wine.out -I. -std=c++11
+	g++ -g main.cpp -o wine.out -I. -std=c++11

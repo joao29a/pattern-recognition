@@ -73,16 +73,16 @@ void MachineLearning<T>::testInputData() {
         T distance = centroid(m);
         std::cout << "\tSample: " << sample->getId() << std::endl;
         std::cout << "\tAttributes:\n" << *sample;
-        std::cout << "\tDistance: " << centroid(m) << std::endl;
+        std::cout << "\tDistance: " << distance << std::endl;
         if (distance > distanceBest && distance < distanceWorst){
           std::cout << "\tResult: OK" << "\n\n";
           okSamples.push_back(sample->getId());
         }
-        else if (distance < distanceBest){
+        else if (distance <= distanceBest){
           std::cout << "\tResult: Best" << "\n\n";
           bestSamples.push_back(sample->getId());
         }
-        else if (distance > distanceWorst){
+        else if (distance >= distanceWorst){
           std::cout << "\tResult: Bad" << "\n\n";
           badSamples.push_back(sample->getId());
         }

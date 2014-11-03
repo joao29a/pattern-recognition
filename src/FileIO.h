@@ -6,9 +6,6 @@
 #include <vector>
 #include "DataType.h"
 
-template<typename T>
-using DataMap = std::unordered_map<unsigned, std::vector<DataType<T>*>>;
-
 template <typename T>
 class FileIO {
   protected:
