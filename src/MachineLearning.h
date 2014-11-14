@@ -4,6 +4,7 @@
 #include "FileIO.h"
 #include <iostream>
 #include <dlib/svm.h>
+#include <dlib/svm_threaded.h>
 
 #define TOLERANCE  0.000000001
 #define KERNEL_VAL 0.001
@@ -16,23 +17,40 @@ class MachineLearning {
   protected:
     typedef dlib::matrix<T, 0, 1> MatrixSample;
     typedef dlib::radial_basis_kernel<MatrixSample> Kernel;
+    typedef dlib::one_vs_one_trainer<dlib::any_trainer<MatrixSample>> ovo_trainer;
+    dlib::one_vs_one_decision_function<ovo_trainer> df;
+
     DataMap<T> collectionMap;
     DataMap<T> inputMap;
     FileIO<T>* dataIO;
+
     std::unordered_map<unsigned, dlib::kcentroid<Kernel>> learningData;
+
     const char* filename, *input;
+
     void trainData(std::vector<DataType<T>*>&, dlib::kcentroid<Kernel>&);
+
     size_t getAttSize();
+
     DataType<T>* getBestFromCollection(unsigned id, std::vector<DataType<T>*>, T*);
+
     DataType<T>* getWorstFromCollection(unsigned id, std::vector<DataType<T>*>, T*);
+
     std::vector<DataType<T>*> getAllSamples();
+
+    //train data for kcentroid
     void buildSamplesAndTrain(std::vector<DataType<T>*>, unsigned);
+
+    //train data for one_vs_one_df
+    void generateData(std::vector<MatrixSample>&, std::vector<T>&, 
+        std::vector<DataType<T>*>, unsigned);
+
     MatrixSample makeSample(DataType<T>*);
 
   public:
     MachineLearning() {}
     void constructDataCollection();
-    void buildLearningData();
+    void buildLearningData(bool);
     void testInputData();
     void printData();
     void printLearningInfo();
@@ -99,22 +117,54 @@ void MachineLearning<T>::testInputData() {
 }
 
 template <typename T>
-void MachineLearning<T>::buildLearningData() {
+void MachineLearning<T>::buildLearningData(bool readFile) {
+  std::vector<MatrixSample> data;
+  std::vector<T> labels;
   for (auto& collection: collectionMap) {
     buildSamplesAndTrain(collection.second, collection.first);
+    if (!readFile)
+      generateData(data, labels, collection.second, collection.first);
   }
   if (collectionMap.size() > 1) {
     unsigned id = collectionMap.size() + 1;
     buildSamplesAndTrain(getAllSamples(), id);
   }
+  dlib::one_vs_one_decision_function<ovo_trainer, 
+    dlib::decision_function<Kernel>> df2;
+  if (!readFile) {
+    dlib::krr_trainer<Kernel> krr_trainer;
+    krr_trainer.set_kernel(Kernel(KERNEL_VAL));
+    ovo_trainer trainer;
+    trainer.set_trainer(krr_trainer);
+    df = trainer.train(data, labels);
+    df2 = df;
+    dlib::serialize("df.dat") << df2;
+  }
+  else {
+    dlib::deserialize("df.dat") >> df2;
+    df = df2;
+  }
 }
 
+//build and train for kcentroid
 template <typename T>
 void MachineLearning<T>::buildSamplesAndTrain(std::vector<DataType<T>*> samples,
     unsigned id) {
   dlib::kcentroid<Kernel> centroid(Kernel(KERNEL_VAL), TOLERANCE, MAX_DICT);
   trainData(samples, centroid);
   learningData[id] = centroid;
+}
+
+//build and train for one_vs_one_decision_function
+template <typename T>
+void MachineLearning<T>::generateData(std::vector<MatrixSample>& data, 
+    std::vector<T>& labels, std::vector<DataType<T>*> samples, 
+    unsigned id) {
+  for (DataType<T>* sample: samples) {
+    MatrixSample m = makeSample(sample);
+    data.push_back(m);
+    labels.push_back(id);
+  }
 }
 
 template <typename T>
@@ -237,7 +287,7 @@ void MachineLearning<T>::printBestAndWorst() {
     std::cout << "\tCollection: " << bestSample->getCollection() << std::endl;
     std::cout << "\tDistance: " << distance << "\n\n";
     worstSample = getWorstFromCollection(collectionMap.size() + 1, 
-      getAllSamples(), &distance);
+        getAllSamples(), &distance);
     std::cout << "\tWorst sample id: " << worstSample->getId() << std::endl;
     std::cout << "\tCollection: " << worstSample->getCollection() << std::endl;
     std::cout << "\tDistance: " << distance << "\n\n";
