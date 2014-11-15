@@ -70,7 +70,7 @@ size_t DataType<T>::getAttSize() {
 template <typename T>
 std::ostream& operator<<(std::ostream& os, DataType<T>& dt) {
   for (std::string& att: dt.getAttributesName()){
-    os << "\t\t" << att << ": " << dt.getAtt(att) << std::endl;
+    os << "\t" << att << ": " << dt.getAtt(att) << std::endl;
   }
   return os;
 }

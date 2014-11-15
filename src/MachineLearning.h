@@ -65,55 +65,49 @@ void MachineLearning<T>::constructDataCollection() {
 
 template <typename T>
 void MachineLearning<T>::testInputData() {
-  for (auto& learning: learningData) {
-    DataType<T>* best, *worst;
-    T distanceBest, distanceWorst;
-    std::vector<unsigned> okSamples, badSamples, bestSamples;
-    unsigned id = learning.first;
-    if (id != collectionMap.size() + 1) {
-      std::cout << "Collection: " << id << std::endl;
-      DataType<T>* best = getBestFromCollection(id, collectionMap[id], 
+  std::vector<unsigned> okSamples, badSamples, bestSamples;
+  for (auto& input: inputMap) {
+    std::vector<DataType<T>*> samples = input.second;
+    for (DataType<T>* sample: samples) {
+      MatrixSample m = makeSample(sample);
+      T id = df(m);
+      DataType<T>* best, *worst;
+      T distanceBest, distanceWorst;
+      dlib::kcentroid<Kernel> centroid = learningData[id];
+      best = getBestFromCollection(id, collectionMap[id], 
           &distanceBest);
-      DataType<T>* worst = getWorstFromCollection(id, collectionMap[id], 
+      worst = getWorstFromCollection(id, collectionMap[id], 
           &distanceWorst);
-    } else {
-      std::cout << "Collection: All" << std::endl;
-      DataType<T>* best = getBestFromCollection(id, getAllSamples(), 
-          &distanceBest);
-      DataType<T>* worst = getWorstFromCollection(id, getAllSamples(), 
-          &distanceWorst);
-    }
-    dlib::kcentroid<Kernel> centroid = learning.second;
-    for (auto& input: inputMap) {
-      std::vector<DataType<T>*> samples = input.second;
-      for (DataType<T>* sample: samples) {
-        MatrixSample m = makeSample(sample);
-        T distance = centroid(m);
-        std::cout << "\tSample: " << sample->getId() << std::endl;
-        std::cout << "\tAttributes:\n" << *sample;
-        std::cout << "\tDistance: " << distance << std::endl;
-        if (distance > distanceBest && distance < distanceWorst){
-          std::cout << "\tResult: OK" << "\n\n";
-          okSamples.push_back(sample->getId());
-        }
-        else if (distance <= distanceBest){
-          std::cout << "\tResult: Best" << "\n\n";
-          bestSamples.push_back(sample->getId());
-        }
-        else if (distance >= distanceWorst){
-          std::cout << "\tResult: Bad" << "\n\n";
-          badSamples.push_back(sample->getId());
-        }
+
+      T distance = centroid(m);
+
+      std::cout << "Sample: " << sample->getId() << std::endl;
+      std::cout << "Attributes:\n" << *sample;
+      std::cout << "Multiclass classification prediction: " << id << "\n";
+      std::cout << "Kcentroid distance: " << distance << "\n";
+      std::cout << "Kcentroid best distance: " << distanceBest << "\n";
+      std::cout << "Kcentroid worst distance: " << distanceWorst << "\n";
+      if (distance > distanceBest && distance < distanceWorst){
+        std::cout << "Result: OK" << "\n\n";
+        okSamples.push_back(sample->getId());
+      }
+      else if (distance <= distanceBest){
+        std::cout << "Result: Best" << "\n\n";
+        bestSamples.push_back(sample->getId());
+      }
+      else if (distance >= distanceWorst){
+        std::cout << "Result: Bad" << "\n\n";
+        badSamples.push_back(sample->getId());
       }
     }
-    std::cout << "\tStatistic: " << std::endl;
-    std::cout << "\t\tOK Samples: " << okSamples << "(" << okSamples.size() 
-      << ")" << std::endl;
-    std::cout << "\t\tBest Samples: " << bestSamples << "(" << bestSamples.size() 
-      << ")" << std::endl;
-    std::cout << "\t\tBad Samples: " << badSamples << "(" << badSamples.size() 
-      << ")" << "\n\n";
   }
+  std::cout << "Statistic: " << std::endl;
+  std::cout << "\tOK Samples: " << okSamples << "(" << okSamples.size() 
+    << ")" << std::endl;
+  std::cout << "\tBest Samples: " << bestSamples << "(" << bestSamples.size() 
+    << ")" << std::endl;
+  std::cout << "\tBad Samples: " << badSamples << "(" << badSamples.size() 
+    << ")" << "\n";
 }
 
 template <typename T>
